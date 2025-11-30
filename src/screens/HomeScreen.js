@@ -18,7 +18,7 @@ import {
 import { COLORS, SIZES } from '../constants/theme';
 import { fetchJobs } from '../api/jobs';
 import JobCard from '../components/JobCard';
-import { Search, MapPin, LogOut, Info } from 'lucide-react-native';
+import { Search, MapPin, LogOut, Info, WifiOff } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -36,18 +36,112 @@ const CATEGORIES = [
     "Mecánica", "Medicina", "Petrolífero", "Recursos Humanos", "Transportes"
 ];
 
+const HomeHeader = ({
+    searchQuery,
+    setSearchQuery,
+    locationQuery,
+    setLocationQuery,
+    handleSearch,
+    selectedCategory,
+    setSelectedCategory,
+    navigation,
+    handleExit
+}) => (
+    <View>
+        {/* Dark Header Background */}
+        <View style={styles.darkHeader}>
+            <View style={styles.topBar}>
+                <View>
+                    <Text style={styles.greeting}>Olá, Bem-vindo 👋</Text>
+                    <Text style={styles.headerTitle}>Encontre o seu{'\n'}emprego ideal</Text>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('About')}>
+                        <Info size={24} color={COLORS.white} />
+                    </TouchableOpacity>
+                    {Platform.OS === 'android' && (
+                        <TouchableOpacity style={styles.iconButton} onPress={handleExit}>
+                            <LogOut size={24} color={COLORS.white} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+        </View>
+
+        {/* Floating Search Box */}
+        <View style={styles.floatingSearchContainer}>
+            <View style={styles.inputRow}>
+                <Search size={20} color={COLORS.textLight} />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Pesquisar cargo..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholderTextColor={COLORS.textLight}
+                />
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.inputRow}>
+                <MapPin size={20} color={COLORS.textLight} />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Localização..."
+                    value={locationQuery}
+                    onChangeText={setLocationQuery}
+                    placeholderTextColor={COLORS.textLight}
+                />
+            </View>
+
+            <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+                <Text style={styles.searchButtonText}>Pesquisar Vaga</Text>
+            </TouchableOpacity>
+        </View>
+
+        {/* Categories */}
+        <View style={styles.categoriesContainer}>
+            <Text style={styles.sectionTitle}>Categorias</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContent}>
+                {CATEGORIES.map((cat, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        style={[
+                            styles.categoryChip,
+                            selectedCategory === cat && styles.categoryChipSelected
+                        ]}
+                        onPress={() => setSelectedCategory(cat)}
+                    >
+                        <Text style={[
+                            styles.categoryText,
+                            selectedCategory === cat && styles.categoryTextSelected
+                        ]}>
+                            {cat}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+
+        <View style={styles.listHeader}>
+            <Text style={styles.sectionTitle}>Vagas disponíveis</Text>
+        </View>
+    </View>
+);
+
 const HomeScreen = ({ navigation }) => {
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState("Todos");
     const [locationQuery, setLocationQuery] = useState('');
+    const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
+    const [appliedLocationQuery, setAppliedLocationQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState("Todos");
 
     const loadJobs = async (pageNum = 1, shouldRefresh = false) => {
         if (loading) return;
@@ -64,8 +158,10 @@ const HomeScreen = ({ navigation }) => {
 
             setHasMore(!!data.data.next_page_url);
             setPage(pageNum);
+            setError(null); // Clear error on success
         } catch (error) {
             console.error(error);
+            setError('Não foi possível conectar ao servidor. Verifique sua internet.');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -76,20 +172,25 @@ const HomeScreen = ({ navigation }) => {
         loadJobs();
     }, []);
 
+    const handleSearch = () => {
+        setAppliedSearchQuery(searchQuery);
+        setAppliedLocationQuery(locationQuery);
+    };
+
     // Filter Logic
     useEffect(() => {
         let result = jobs;
 
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
+        if (appliedSearchQuery) {
+            const query = appliedSearchQuery.toLowerCase();
             result = result.filter(job =>
                 job.title.toLowerCase().includes(query) ||
                 job.company.toLowerCase().includes(query)
             );
         }
 
-        if (locationQuery) {
-            const query = locationQuery.toLowerCase();
+        if (appliedLocationQuery) {
+            const query = appliedLocationQuery.toLowerCase();
             result = result.filter(job =>
                 job.province && job.province.toLowerCase().includes(query)
             );
@@ -102,7 +203,7 @@ const HomeScreen = ({ navigation }) => {
         }
 
         setFilteredJobs(result);
-    }, [jobs, searchQuery, selectedCategory, locationQuery]);
+    }, [jobs, appliedSearchQuery, selectedCategory, appliedLocationQuery]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -110,7 +211,7 @@ const HomeScreen = ({ navigation }) => {
     }, []);
 
     const loadMore = () => {
-        if (hasMore && !loading) {
+        if (hasMore && !loading && !error) {
             loadJobs(page + 1);
         }
     };
@@ -132,87 +233,6 @@ const HomeScreen = ({ navigation }) => {
         );
     };
 
-    const renderHeader = () => (
-        <View>
-            {/* Dark Header Background */}
-            <View style={styles.darkHeader}>
-                <View style={styles.topBar}>
-                    <View>
-                        <Text style={styles.greeting}>Olá, Bem-vindo 👋</Text>
-                        <Text style={styles.headerTitle}>Encontre o seu{'\n'}emprego ideal</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row' }}>
-                        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('About')}>
-                            <Info size={24} color={COLORS.white} />
-                        </TouchableOpacity>
-                        {Platform.OS === 'android' && (
-                            <TouchableOpacity style={styles.iconButton} onPress={handleExit}>
-                                <LogOut size={24} color={COLORS.white} />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-            </View>
-
-            {/* Floating Search Box */}
-            <View style={styles.floatingSearchContainer}>
-                <View style={styles.inputRow}>
-                    <Search size={20} color={COLORS.textLight} />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Pesquisar cargo..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholderTextColor={COLORS.textLight}
-                    />
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.inputRow}>
-                    <MapPin size={20} color={COLORS.textLight} />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Localização..."
-                        value={locationQuery}
-                        onChangeText={setLocationQuery}
-                        placeholderTextColor={COLORS.textLight}
-                    />
-                </View>
-
-                <TouchableOpacity style={styles.searchButton}>
-                    <Text style={styles.searchButtonText}>Pesquisar Vaga</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Categories */}
-            <View style={styles.categoriesContainer}>
-                <Text style={styles.sectionTitle}>Categorias</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContent}>
-                    {CATEGORIES.map((cat, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={[
-                                styles.categoryChip,
-                                selectedCategory === cat && styles.categoryChipSelected
-                            ]}
-                            onPress={() => setSelectedCategory(cat)}
-                        >
-                            <Text style={[
-                                styles.categoryText,
-                                selectedCategory === cat && styles.categoryTextSelected
-                            ]}>
-                                {cat}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-
-            <View style={styles.listHeader}>
-                <Text style={styles.sectionTitle}>Vagas disponíveis</Text>
-            </View>
-        </View>
-    );
-
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
@@ -226,16 +246,44 @@ const HomeScreen = ({ navigation }) => {
                 )}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContent}
-                ListHeaderComponent={renderHeader}
+                ListHeaderComponent={
+                    <HomeHeader
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        locationQuery={locationQuery}
+                        setLocationQuery={setLocationQuery}
+                        handleSearch={handleSearch}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        navigation={navigation}
+                        handleExit={handleExit}
+                    />
+                }
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.white} />
                 }
-                ListFooterComponent={loading && <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />}
-                ListEmptyComponent={!loading && (
+                ListFooterComponent={loading && !error && <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />}
+                ListEmptyComponent={(!loading || error) && (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>Nenhuma vaga encontrada.</Text>
+                        {error ? (
+                            <>
+                                <WifiOff size={48} color={COLORS.textLight} style={{ marginBottom: SIZES.medium }} />
+                                <Text style={styles.emptyText}>{error}</Text>
+                                <TouchableOpacity
+                                    style={[styles.retryButton, loading && styles.retryButtonDisabled]}
+                                    onPress={() => loadJobs(1, true)}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.retryButtonText}>
+                                        {loading ? "Conectando..." : "Tentar Novamente"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <Text style={styles.emptyText}>Nenhuma vaga encontrada.</Text>
+                        )}
                     </View>
                 )}
             />
@@ -373,6 +421,22 @@ const styles = StyleSheet.create({
     emptyText: {
         color: COLORS.textLight,
         fontSize: SIZES.medium,
+        textAlign: 'center',
+        marginBottom: SIZES.medium,
+    },
+    retryButton: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: SIZES.large,
+        paddingVertical: SIZES.small,
+        borderRadius: SIZES.small,
+    },
+    retryButtonDisabled: {
+        opacity: 0.7,
+    },
+    retryButtonText: {
+        color: COLORS.white,
+        fontWeight: 'bold',
+        fontSize: SIZES.font,
     }
 });
 
