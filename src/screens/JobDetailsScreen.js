@@ -29,7 +29,7 @@ const JobDetailsScreen = ({ route, navigation }) => {
 
     const imageUrl = job.photo && job.photo.startsWith('http')
         ? job.photo
-        : `https://ao.empregosyoyota.net/${job.photo}`;
+        : `https://ao.empregosyoyota.net/storage/${job.photo}`;
 
     const handleApply = () => {
         if (job.email_or_link) {

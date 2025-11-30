@@ -13,7 +13,7 @@ const JobCard = ({ job, onPress }) => {
     // Handle image URL - ensure it's a full URL if relative
     const imageUrl = job.photo && job.photo.startsWith('http')
         ? job.photo
-        : `https://ao.empregosyoyota.net/${job.photo}`;
+        : `https://ao.empregosyoyota.net/storage/${job.photo}`;
 
     return (
         <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
