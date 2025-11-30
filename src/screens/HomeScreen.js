@@ -18,7 +18,7 @@ import {
 import { COLORS, SIZES } from '../constants/theme';
 import { fetchJobs } from '../api/jobs';
 import JobCard from '../components/JobCard';
-import { Search, MapPin, LogOut } from 'lucide-react-native';
+import { Search, MapPin, LogOut, Info } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -141,11 +141,16 @@ const HomeScreen = ({ navigation }) => {
                         <Text style={styles.greeting}>Olá, Bem-vindo 👋</Text>
                         <Text style={styles.headerTitle}>Encontre o seu{'\n'}emprego ideal</Text>
                     </View>
-                    {Platform.OS === 'android' && (
-                        <TouchableOpacity style={styles.iconButton} onPress={handleExit}>
-                            <LogOut size={24} color={COLORS.white} />
+                    <View style={{ flexDirection: 'row' }}>
+                        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('About')}>
+                            <Info size={24} color={COLORS.white} />
                         </TouchableOpacity>
-                    )}
+                        {Platform.OS === 'android' && (
+                            <TouchableOpacity style={styles.iconButton} onPress={handleExit}>
+                                <LogOut size={24} color={COLORS.white} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
             </View>
 
@@ -203,10 +208,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.listHeader}>
-                <Text style={styles.sectionTitle}>Recomendados</Text>
-                <TouchableOpacity>
-                    <Text style={styles.seeAll}>Ver todos</Text>
-                </TouchableOpacity>
+                <Text style={styles.sectionTitle}>Vagas disponíveis</Text>
             </View>
         </View>
     );
