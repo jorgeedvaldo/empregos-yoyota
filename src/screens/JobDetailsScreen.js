@@ -17,6 +17,7 @@ import RenderHtml from 'react-native-render-html';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -87,6 +88,8 @@ const JobDetailsScreen = ({ route, navigation }) => {
         }
     };
 
+    const insets = useSafeAreaInsets();
+
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
@@ -144,7 +147,7 @@ const JobDetailsScreen = ({ route, navigation }) => {
             </ScrollView>
 
             {/* Footer Action */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SIZES.large) }]}>
                 <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
                     <Text style={styles.applyButtonText}>Candidatar-se Agora</Text>
                     <ExternalLink size={20} color={COLORS.white} style={{ marginLeft: SIZES.small }} />
@@ -269,7 +272,6 @@ const styles = StyleSheet.create({
         padding: SIZES.large,
         borderTopWidth: 1,
         borderTopColor: COLORS.lightGray,
-        paddingBottom: Platform.OS === 'ios' ? 34 : SIZES.large,
     },
     applyButton: {
         backgroundColor: COLORS.primary, // Black
