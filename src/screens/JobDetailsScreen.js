@@ -48,7 +48,7 @@ const JobDetailsScreen = ({ route, navigation }) => {
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Confira esta vaga de ${job.title} na ${job.company}: https://ao.empregosyoyota.net/job/${job.slug}`,
+                message: `Confira esta oportunidade: ${job.title} na ${job.company}. Saiba mais: https://ao.empregosyoyota.net/empregos/${job.slug}`,
             });
         } catch (error) {
             console.error(error.message);
