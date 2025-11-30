@@ -11,12 +11,14 @@ import {
     ScrollView,
     SafeAreaView,
     Dimensions,
-    Platform
+    Platform,
+    Alert,
+    BackHandler
 } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import { fetchJobs } from '../api/jobs';
 import JobCard from '../components/JobCard';
-import { Search, MapPin, Bell } from 'lucide-react-native';
+import { Search, MapPin, LogOut } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -113,6 +115,23 @@ const HomeScreen = ({ navigation }) => {
         }
     };
 
+    const handleExit = () => {
+        Alert.alert(
+            "Sair do Aplicativo",
+            "Tem a certeza que deseja sair?",
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel"
+                },
+                {
+                    text: "Sair",
+                    onPress: () => BackHandler.exitApp()
+                }
+            ]
+        );
+    };
+
     const renderHeader = () => (
         <View>
             {/* Dark Header Background */}
@@ -122,9 +141,11 @@ const HomeScreen = ({ navigation }) => {
                         <Text style={styles.greeting}>Olá, Bem-vindo 👋</Text>
                         <Text style={styles.headerTitle}>Encontre o seu{'\n'}emprego ideal</Text>
                     </View>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <Bell size={24} color={COLORS.white} />
-                    </TouchableOpacity>
+                    {Platform.OS === 'android' && (
+                        <TouchableOpacity style={styles.iconButton} onPress={handleExit}>
+                            <LogOut size={24} color={COLORS.white} />
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
 
